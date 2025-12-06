@@ -32,7 +32,7 @@ jobs:
         
     - name: Run tests
       # Command to execute your test suite (e.g., pytest, unittest)
-      run: pytest
+      run: python -m pytest
 
 
 
