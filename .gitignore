@@ -1,2 +1,7 @@
-data/
 .venv/
+
+data/raw/*.txt
+data/raw/*.csv
+
+!.gitignore
+*.dvc
