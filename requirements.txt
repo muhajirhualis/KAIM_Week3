@@ -10,7 +10,8 @@ seaborn
 pyyaml  # For configuration files if you create them
 
 # # Modeling, DVC, Stats
-# dvc
-# scikit-learn
-# statsmodels
-# xgboost
+dvc
+scipy
+statsmodels
+scikit-learn
+xgboost

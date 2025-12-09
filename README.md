@@ -120,7 +120,7 @@ jupyter notebook notebooks/eda_stats.ipynb
 
 ---
 
-## 📚 References & Tools
+## References & Tools
 - [DVC Documentation](https://dvc.org/doc)
 - [10 Academy Challenge Brief]
 - Insurance Glossary: [50 Common Terms](https://cornerstonebrokers.co.za/insurance-terms)
