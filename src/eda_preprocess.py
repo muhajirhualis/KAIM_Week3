@@ -57,6 +57,18 @@ class DataPreprocessor:
                 self.df[col] = self.df[col].astype('category')
         
         return self.df
+    
+        # NUMERIC CONVERSION FIX: Re-coerce all financial/age columns to numeric 
+        # to prevent them from being mistaken for high-cardinality strings later.
+        numeric_cols_to_check = ['TotalPremium', 'TotalClaims', 'CustomValueEstimate', 
+                                 'CapitalOutstanding', 'SumInsured', 'CalculatedPremiumPerTerm']
+        
+        for col in numeric_cols_to_check:
+             if col in self.df.columns:
+                # Use to_numeric to force type conversion, coercing any remaining strings to NaN
+                self.df[col] = pd.to_numeric(self.df[col], errors='coerce')
+
+        return self.df
       
     def _handle_missing_values(self) -> pd.DataFrame:
         """
@@ -94,7 +106,44 @@ class DataPreprocessor:
             self.df['NumberOfVehiclesInFleet'] = self.df['NumberOfVehiclesInFleet'].fillna(1).astype(int)
 
         return self.df
-      
+    
+    
+    def _handle_high_cardinality(self, threshold: int = 100) -> pd.DataFrame:
+        """
+        Reduces the cardinality of ONLY CATEGORICAL features by grouping rare categories 
+        into an 'Other' bucket. (Recommended approach over dropping).
+        """
+        # Target ONLY object columns, excluding any that contain critical numeric data
+        # 'ZipCode' or 'PostalCode' (if it's the ID), and 'Model' are the typical culprits.
+        categorical_cols_to_group = []
+        for col in self.df.select_dtypes(include='object').columns:
+            # We assume any remaining object column is a valid string/categorical feature
+            if self.df[col].nunique() > threshold:
+                categorical_cols_to_group.append(col)
+
+        if not categorical_cols_to_group:
+            print("No high-cardinality object columns found for grouping.")
+            return self.df
+
+        print(f"Grouping high-cardinality columns ({len(categorical_cols_to_group)}): {categorical_cols_to_group}")
+        
+        for col in categorical_cols_to_group:
+            value_counts = self.df[col].value_counts()
+            
+            # Identify categories to keep (must appear >= threshold times)
+            to_keep = value_counts[value_counts >= threshold].index
+            
+            # Replace rare categories with 'Other_Category'
+            self.df[col] = np.where(
+                self.df[col].isin(to_keep),
+                self.df[col],
+                'Other_Category'
+            )
+            print(f"  -> Cardinality of '{col}' reduced from {len(value_counts)} to {len(to_keep) + 1} categories.")
+                
+        return self.df
+    
+          
     def _create_eda_features(self) -> pd.DataFrame:
         """
         Creates essential features for EDA and Loss Ratio calculation.
@@ -109,13 +158,17 @@ class DataPreprocessor:
             self.df['VehicleAge_Years'] = (self.df['TransactionMonth'] - self.df['VehicleIntroDate']).dt.days / 365.25
             
         return self.df
-      
+    
+
+         
     def run_pipeline(self) -> pd.DataFrame:
         """Executes all preprocessing steps in sequence."""
         print("Starting Data Preprocessing...")
         self.df = self._clean_financial_data()
         self.df = self._correct_data_types()
         self.df = self._handle_missing_values()
+        # Apply SAFE cardinality reduction to remaining categorical columns
+        self.df = self._handle_high_cardinality(threshold=100)
         self.df = self._create_eda_features()
         print("Preprocessing Complete.")
         return self.df
