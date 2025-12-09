@@ -5,3 +5,5 @@ data/raw/*.csv
 
 !.gitignore
 *.dvc
+
+__pycache__/
